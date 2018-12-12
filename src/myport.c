@@ -42,13 +42,30 @@ int main(int argc, char *argv[]){
 
     //ftok to generate unique key 
     key_t key = ftok("shmfile",65); 
-  
     //shmget returns an identifier in shmid
     int shmid = shmget(key,1024,0666|IPC_CREAT);
-  
     //shmat to attach to shared memory 
     char *str = (char*) shmat(shmid,(void*)0,0);
       
+    //Create public ledger. Public ledger is a singly linked list of struct publicLedgerRecords
+    publicLedger *head = NULL;
+    publicLedgerRecord newRecord = createPublicLedger("test",1,1,'a','b',"status");
+    push(&head, newRecord);
+    newRecord = pop(&head);
+    printf("%s %f %f %c %c %s\n",newRecord.shipName, newRecord.arrivalTime, newRecord.stayTime, newRecord.parkingSpace, newRecord.shipSize, newRecord.status);
+
+    pid_t pid = fork();
+    if (pid == 0){
+
+    }        
+    else if (pid < 0){
+        errCatch("Error in Fork");
+    }
+    else{
+        
+    }
+        
+
     //Detach from shared memory
     shmdt(str);
     

@@ -7,8 +7,27 @@
     #include <unistd.h>
     #include <sys/ipc.h>
     #include <sys/shm.h>
+    #include <semaphore.h>
+    #include <time.h>
+
+    typedef struct publicLedgerRecords{
+        char shipName[50];
+        float stayTime, arrivalTime;
+        char parkingSpace, shipSize;
+        char status[50];
+    } publicLedgerRecord;
+
+    typedef struct list{
+        publicLedgerRecord data;
+        struct list *next;
+    } publicLedger;
 
     int strArraySearch(char const *array[], int len, char *delim);
     void errCatch(char* errmsg);
+    publicLedgerRecord pop(publicLedger** root);
+    publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arrivalTime, char parkingSpace, char shipSize, char status[50]);
+    publicLedger* newNode(publicLedgerRecord data);
+    int isEmpty(publicLedger *root);
+    void push(publicLedger** root, publicLedgerRecord data);
 
 #endif
