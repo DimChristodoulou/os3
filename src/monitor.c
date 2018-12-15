@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
 		
 	}
 
-    printf("%d %d %d \n", monitortime, stattimes, shmid);
+    printf("MONITOR %d %d %d \n", monitortime, stattimes, shmid);
 
     return 0;
 }

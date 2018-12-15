@@ -1,5 +1,15 @@
 #include "../inc/global.h"
 
+#define SEMKEYPATH "/tmp"  /* Path used on ftok for semget key  */
+#define SEMKEYID 1              /* Id used on ftok for semget key    */
+#define SHMKEYPATH "/tmp"  /* Path used on ftok for shmget key  */
+#define SHMKEYID 1              /* Id used on ftok for shmget key    */
+
+#define NUMSEMS 2               /* Num of sems in created sem set    */
+#define SIZEOFSHMSEG 50         /* Size of the shared mem segment    */
+
+#define NUMMSG 2
+
 void errCatch(char* errmsg){
 	printf("Error: %s\n", errmsg);
 }
@@ -13,14 +23,14 @@ int strArraySearch(char const *array[], int len, char *delim){
 	return -1;
 }
 
-publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arrivalTime, char parkingSpace, char shipSize, char status[50]){
+publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arrivalTime, char shipSize, char status[50], int overrideParking){
 	publicLedgerRecord newRecord;
 	strcpy(newRecord.shipName,name);
 	newRecord.stayTime = stayTime;
 	newRecord.arrivalTime = arrivalTime;
-	newRecord.parkingSpace = parkingSpace;
 	newRecord.shipSize = shipSize;
 	strcpy(newRecord.status,status);
+    newRecord.overrideParking = overrideParking;
 	return newRecord;
 }
 
@@ -53,3 +63,62 @@ publicLedgerRecord pop(publicLedger** root) {
   
     return popped; 
 } 
+
+void printPublicLedger(){
+    
+}
+
+char* writeToSharedMem(publicLedger** root){
+    
+}
+
+char *randstring(size_t length) {
+
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";        
+    char *randomString = NULL;
+
+    if (length) {
+        randomString = malloc(sizeof(char) * (length +1));
+
+        if (randomString) {            
+            for (int n = 0;n < length;n++) {            
+                int key = rand() % (int)(sizeof(charset) -1);
+                randomString[n] = charset[key];
+            }
+
+            randomString[length] = '\0';
+        }
+    }
+
+    return randomString;
+}
+
+char randomShipSize(){
+    int sizesArr[] = {76,77,83};
+    return sizesArr[rand()%3];
+}
+
+int randOverrideParking(){
+    return rand()%2;
+}
+
+/*************************************************************************
+ *                      SHARED MEMORY AND SEMAPHORES                     *
+ *************************************************************************/
+
+
+sem_t createSem(){
+    sem_t sp; 
+    int retval;
+
+    /*  Initialize  the  semaphore. */
+    retval = sem_init (&sp, 1, 0);
+
+    if (retval  != 0) {
+        perror("Couldn ’t initialize.");
+        exit (3);
+    }
+
+    //sem_destroy (&sp);
+    return  sp;
+}
