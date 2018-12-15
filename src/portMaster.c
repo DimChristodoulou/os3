@@ -6,6 +6,11 @@ int main(int argc, char const *argv[])
     FILE *configFile;
     int shmid, count;
 
+    //The portMaster Semaphore shows when the port master should read from the shared memory
+    sem_t portMasterSemaphore = createSem("/portMasterSemaphore");
+    printf("test\n");
+    sem_wait(&portMasterSemaphore);
+    printf("test\n");
     //printf("%s %s %s %s\n", argv[1], argv[2], argv[3], argv[4]);
 
     if(argc == 5){
@@ -54,10 +59,10 @@ int main(int argc, char const *argv[])
     printf("%d\n", shmid);
     char *shmemStr = (char*) shmat(shmid,(void*)0,0);
     printf("attached\n");
-    publicLedger *head = NULL;
-    memcpy(&head, shmemStr, sizeof(int));
+    //publicLedger *head = NULL;
+    //memcpy(&head, shmemStr, sizeof(int));
     //printf("copied %d\n", &head);
-    publicLedgerRecord r1 = pop(&head);
-    printf("CHILD READ %s %f %f %c %c %s\n",r1.shipName, r1.arrivalTime, r1.stayTime, r1.parkingSpace, r1.shipSize, r1.status);
+    //publicLedgerRecord r1 = pop(&head);
+    //printf("CHILD READ %s %f %f %c %c %s\n",r1.shipName, r1.arrivalTime, r1.stayTime, r1.parkingSpace, r1.shipSize, r1.status);
     return 0;
 }

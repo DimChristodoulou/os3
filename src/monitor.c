@@ -21,5 +21,10 @@ int main(int argc, char const *argv[])
 
     printf("MONITOR %d %d %d \n", monitortime, stattimes, shmid);
 
+    while(1){
+        sleep(stattimes);
+                
+    }
+
     return 0;
 }

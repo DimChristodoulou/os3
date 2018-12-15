@@ -23,7 +23,7 @@ int strArraySearch(char const *array[], int len, char *delim){
 	return -1;
 }
 
-publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arrivalTime, char shipSize, char status[50], int overrideParking){
+publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arrivalTime, char shipSize, char status[50], int overrideParking, float mantime){
 	publicLedgerRecord newRecord;
 	strcpy(newRecord.shipName,name);
 	newRecord.stayTime = stayTime;
@@ -31,6 +31,8 @@ publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arriv
 	newRecord.shipSize = shipSize;
 	strcpy(newRecord.status,status);
     newRecord.overrideParking = overrideParking;
+    newRecord.cost = 0;
+    newRecord.mantime = mantime;
 	return newRecord;
 }
 
@@ -64,12 +66,12 @@ publicLedgerRecord pop(publicLedger** root) {
     return popped; 
 } 
 
-void printPublicLedger(){
-    
+void printPublicLedger(publicLedgerRecord rec){
+    printf("%s - %fs - %fa - %c - %s - %d - %d\n",rec.shipName, rec.stayTime, rec.arrivalTime, rec.parkingSpace, rec.status, rec.overrideParking, rec.cost);
 }
 
-char* writeToSharedMem(publicLedger** root){
-    
+void writeToSharedMem(publicLedgerRecord rec, char *sharedMem){
+    sprintf(sharedMem, "%s - %fs - %fa - %c - %s - %d - %d", rec.shipName, rec.stayTime, rec.arrivalTime, rec.parkingSpace, rec.status, rec.overrideParking, rec.cost);
 }
 
 char *randstring(size_t length) {
@@ -107,18 +109,17 @@ int randOverrideParking(){
  *************************************************************************/
 
 
-sem_t createSem(){
-    sem_t sp; 
-    int retval;
+sem_t createSem(char *name){
+    sem_t *sp; 
 
     /*  Initialize  the  semaphore. */
-    retval = sem_init (&sp, 1, 0);
+    sp = sem_open(name, O_CREAT, 0644, 0);
 
-    if (retval  != 0) {
+    if (sp  == SEM_FAILED) {
         perror("Couldn ’t initialize.");
         exit (3);
     }
 
     //sem_destroy (&sp);
-    return  sp;
+    return  *sp;
 }

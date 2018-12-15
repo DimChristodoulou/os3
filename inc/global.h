@@ -10,6 +10,8 @@
     #include <sys/sem.h>
     #include <semaphore.h>
     #include <time.h>
+    #include <sys/stat.h>
+    #include <fcntl.h>
 
     typedef struct publicLedgerRecords{
         char shipName[50];
@@ -17,6 +19,8 @@
         char parkingSpace, shipSize;
         char status[50];
         int overrideParking;
+        int cost;
+        float mantime;
     } publicLedgerRecord;
 
     typedef struct list{
@@ -27,7 +31,7 @@
     int strArraySearch(char const *array[], int len, char *delim);
     void errCatch(char* errmsg);
     publicLedgerRecord pop(publicLedger** root);
-    publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arrivalTime, char shipSize, char status[50], int overrideParking);
+    publicLedgerRecord createPublicLedger(char name[50], float stayTime, float arrivalTime, char shipSize, char status[50], int overrideParking, float mantime);
     publicLedger* newNode(publicLedgerRecord data);
     int isEmpty(publicLedger *root);
     void push(publicLedger** root, publicLedgerRecord data);
@@ -35,5 +39,7 @@
     char *randstring(size_t length);
     char randomShipSize();
     int randOverrideParking();
+    void printPublicLedger(publicLedgerRecord rec);
+    void writeToSharedMem(publicLedgerRecord rec, char *sharedMem);
 
 #endif
