@@ -67,18 +67,22 @@ publicLedgerRecord pop(publicLedger** root) {
 } 
 
 void printPublicLedger(publicLedgerRecord rec){
-    printf("%s - %fs - %fa - %c - %s - %d - %d\n",rec.shipName, rec.stayTime, rec.arrivalTime, rec.parkingSpace, rec.status, rec.overrideParking, rec.cost);
+    printf("Current public ledger record is %s - %f - %f - %c - %s - %d - %d\n",rec.shipName, rec.stayTime, rec.arrivalTime, rec.shipSize, rec.status, rec.overrideParking, rec.cost);
 }
 
 void writeToSharedMem(publicLedgerRecord rec, char *sharedMem){
     char buf[1000];
-    sprintf(buf, "%s - %fs - %fa - %c - %s - %d - %d", rec.shipName, rec.stayTime, rec.arrivalTime, rec.parkingSpace, rec.status, rec.overrideParking, rec.cost);
+    sprintf(buf, "%s-%f-%f-%c-%s-%d-%d", rec.shipName, rec.stayTime, rec.arrivalTime, rec.shipSize, rec.status, rec.overrideParking, rec.cost);
     memcpy(sharedMem, buf, sizeof(publicLedgerRecord));
+}
+
+void readFromSharedMem(char *dest, char *sharedMem){
+    strcpy(dest,sharedMem);
 }
 
 char *randstring(size_t length) {
 
-    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";        
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";        
     char *randomString = NULL;
 
     if (length) {

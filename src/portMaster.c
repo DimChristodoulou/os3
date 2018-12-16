@@ -8,15 +8,23 @@ int main(int argc, char const *argv[])
 
     //The vessel Semaphore shows when the vessel should read from the shared memory
 	sem_t *vesselSemaphore = sem_open("/vesselSemaphore", 0);
-	//The portMaster Semaphore shows when the port master should read from the shared memory
+	
+    //The portMaster Semaphore shows when the port master should read from the shared memory
 	sem_t *portMasterSemaphore = sem_open("/portMasterSemaphore", 0);
+    
     //Shows if the harbor is currently occupied by another vessel.
 	sem_t *occupiedHarborSemaphore = sem_open("/occupiedHarborSemaphore", 1);
+    
+    //Semaphore that coordinates child processes with parent process.
+	sem_t *globalSemaphore = sem_open("/myGlobalSemaphore", 1);
 
-    int occupiedHarborSemaphoreRetVal, portMasterSemaphoreRetVal, vesselSemaphoreRetVal;
+    //Semaphore that coordinates child processes with parent process.
+	sem_t *shipLeavingSemaphore = sem_open("/shipLeavingSemaphore", 1);
 
-    sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-	printf("semvalue portMASTER %d\n", occupiedHarborSemaphoreRetVal);
+    int occupiedHarborSemaphoreRetVal, portMasterSemaphoreRetVal, vesselSemaphoreRetVal, globalSemaphoreRetVal, shipLeavingSemaphoreRetVal;
+
+    sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
+
     // printf("test\n");
     // sem_wait(&portMasterSemaphore);
     // printf("test\n");
@@ -54,9 +62,9 @@ int main(int argc, char const *argv[])
                 strcpy(configs[i],word);
         }
     }
-    
-    char typesOfVessels[i];
-    int vesselCapacity[i], payPer30[i];
+    int totalCountOfConfigFile = i;
+    char typesOfVessels[totalCountOfConfigFile];
+    int vesselCapacity[totalCountOfConfigFile], payPer30[totalCountOfConfigFile];
     int j=0,k=0,m=0;
     for(i = 0; i < 9; i++){
         if(i%3==0){            
@@ -71,25 +79,58 @@ int main(int argc, char const *argv[])
     //END READ FROM CONFIG FILE
 
     publicLedger *head = NULL;
+    publicLedgerRecord recordToBeInserted;
+
     char buf[1000];
     char *shmemStr = (char*) shmat(shmid,(void*)0,0);
+    char **token;
+    token = (char**)malloc(15*sizeof(char*));
+
+    float recordArrivalTime, recordStayingTime;
     
-    
-    while(1){
+    for(i = 0; i < 15; i++){
+        token[i] = (char*)malloc(100*sizeof(char));
+    }
+
+    count = 0;
+
+    while(globalSemaphoreRetVal == 0){
+
         //Wait until a ship shows up
-        printf("test\n");
         sem_wait(vesselSemaphore);
-        printf("test\n");
-        if( occupiedHarborSemaphoreRetVal > 0 ){
+        sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
+        printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
+        sem_getvalue(shipLeavingSemaphore , &shipLeavingSemaphoreRetVal);
+        printf("SEMAPHORE LEAVING %d\n", shipLeavingSemaphoreRetVal);
+        if( occupiedHarborSemaphoreRetVal > 0 && shipLeavingSemaphoreRetVal > 0){
+            count = 0;
             //Signal all ships that the harbor is occupied
-            printf("test\n");
             sem_wait(occupiedHarborSemaphore);
-            printf("test\n");
-            memcpy(buf, shmemStr, sizeof(publicLedgerRecord));
-            printf("BUF IS %s\n",buf);
+
+            //PART THAT INSERTS THE SHIP IN THE PUBLIC LEDGER
+            //memcpy(buf, shmemStr, sizeof(publicLedgerRecord));
+            readFromSharedMem(buf, shmemStr);
+            printf("PORTMASTER BUF IS %s\n",buf);
+            token[count++] = strtok(buf, "-");
+            do{
+                printf("token: \"%s\"\n", token[count-1]);
+            }
+            while (token[count++] = strtok(NULL, "-"));
+
+            //REMOVE 1 PARKING SPOT ACCORDING TO THE SHIP'S SIZE
+            for(i=0;i<totalCountOfConfigFile;i++){
+                if(typesOfVessels[i] == token[3][0]){
+                    vesselCapacity[i]--;
+                }
+            }
+
+            recordToBeInserted = createPublicLedger(token[0],atof(token[1]),atof(token[2]),token[3][0],token[4],atoi(token[5]),atof(token[6]));
+            push(&head,recordToBeInserted);
+            //shmemStr = "";
+            //printPublicLedger(recordToBeInserted);
         }
         sem_post(portMasterSemaphore);
-
+        sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
     }
 
     //memcpy(&head, shmemStr, sizeof(int));

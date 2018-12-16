@@ -14,12 +14,26 @@ int main(int argc, char *argv[]){
     sem_t *vesselSemaphore = sem_open("/vesselSemaphore", O_CREAT, 0644, val0);
 
     //Shows if the harbor is currently occupied by another vessel.
-    sem_t *occupiedHarborSemaphore = sem_open("/occupiedHarborSemaphore", O_CREAT, 0644, val1);
+    sem_t *shipLeavingSemaphore = sem_open("/shipLeavingSemaphore", O_CREAT, 0644, val1);    
 
-    int occupiedHarborSemaphoreRetVal;
+    //Semaphore that coordinates child processes with parent process.
+    sem_t *globalSemaphore = sem_open("/myGlobalSemaphore", O_CREAT, 0644, val0);
+
+    //Shows if the harbor is currently occupied by another vessel.
+    sem_t *occupiedHarborSemaphore = sem_open("/occupiedHarborSemaphore", O_CREAT, 0644, val1);    
+
+    int occupiedHarborSemaphoreRetVal,globalSemaphoreRetVal,vesselSemaphoreRetVal, portMasterSemaphoreRetVal, shipLeavingSemaphoreRetVal;
 
     sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-	printf("semvalue portMASTER %d\n", occupiedHarborSemaphoreRetVal);
+	printf("semvalue occupiedHarbor %d\n", occupiedHarborSemaphoreRetVal);
+    sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
+	printf("semvalue global  %d\n", globalSemaphoreRetVal);
+    sem_getvalue(vesselSemaphore , &vesselSemaphoreRetVal);
+	printf("semvalue vessel  %d\n", vesselSemaphoreRetVal);
+    sem_getvalue(portMasterSemaphore , &portMasterSemaphoreRetVal);
+	printf("semvalue portMaster  %d\n", portMasterSemaphoreRetVal);
+    sem_getvalue(shipLeavingSemaphore , &shipLeavingSemaphoreRetVal);
+	printf("semvalue shipLeaving  %d\n", shipLeavingSemaphoreRetVal);
 
     //ftok to generate unique key 
     key_t key = ftok("shmfile",65); 
@@ -106,14 +120,14 @@ int main(int argc, char *argv[]){
             char quit;
             printf("i to insert\n");
             scanf("%c",&quit);
-            while( quit == 'i' ){
-                publicLedgerRecord randVessel = createPublicLedger(randstring(10), rand()%5+1, rand()%5+1, randomShipSize(), "new", randOverrideParking(), rand()%3+1);
+            while( quit == 'i' ){                
+                publicLedgerRecord randVessel = createPublicLedger(randstring(10), rand()%5+1, rand()%5+1, randomShipSize(), "waiting", randOverrideParking(), rand()%3+1);
                 
                 sprintf(vesselArgumentArray[2],"%c",randVessel.shipSize);
                 sprintf(vesselArgumentArray[4],"%d",randVessel.overrideParking);
                 sprintf(vesselArgumentArray[6],"%f",randVessel.stayTime);
                 sprintf(vesselArgumentArray[8],"%f",randVessel.mantime);
-
+                //printPublicLedger(randVessel);
                 writeToSharedMem(randVessel, shmemStr);
 
                 pid_t vesselPid = fork();
@@ -125,10 +139,23 @@ int main(int argc, char *argv[]){
             }
         }
     }
+
+    sem_post(globalSemaphore);
         
     //Detach from shared memory
     shmdt(shmemStr);
     
     //Destroy the shared memory
     shmctl(shmid,IPC_RMID,NULL);
+
+    sem_unlink("/portMasterSemaphore");
+    sem_unlink("/vesselSemaphore");
+    sem_unlink("/occupiedHarborSemaphore");
+    sem_unlink("/myGlobalSemaphore");
+    sem_unlink("/shipLeavingSemaphore");
+    sem_destroy(vesselSemaphore);
+    sem_destroy(occupiedHarborSemaphore);
+    sem_destroy(portMasterSemaphore);
+    sem_destroy(globalSemaphore);
+    sem_destroy(shipLeavingSemaphore);
 }

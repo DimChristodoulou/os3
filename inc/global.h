@@ -41,5 +41,6 @@
     int randOverrideParking();
     void printPublicLedger(publicLedgerRecord rec);
     void writeToSharedMem(publicLedgerRecord rec, char *sharedMem);
+    void readFromSharedMem(char *dest, char *sharedMem);
 
 #endif
