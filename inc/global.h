@@ -35,7 +35,7 @@
     publicLedger* newNode(publicLedgerRecord data);
     int isEmpty(publicLedger *root);
     void push(publicLedger** root, publicLedgerRecord data);
-    sem_t createSem();
+    sem_t createSem(char *name, int initialValue);
     char *randstring(size_t length);
     char randomShipSize();
     int randOverrideParking();

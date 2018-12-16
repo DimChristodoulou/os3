@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "global.h": "c",
+        "global.h\u0000global.h": "c",
+        "global.h\u0000lobal.h": "c",
+        "global.h\u0000obal.h": "c"
+    }
+}

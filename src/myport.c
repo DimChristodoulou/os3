@@ -4,16 +4,22 @@ int main(int argc, char *argv[]){
 
     //Time seed used to generate random vessels
     srand(time(0));
+    unsigned int val1 = 1, val0 = 0;
     
     //Both Semaphores are initialized to zero
     //The portMaster Semaphore shows when the port master should read from the shared memory
-    sem_t portMasterSemaphore = createSem("/portMasterSemaphore");
+    sem_t *portMasterSemaphore = sem_open("/portMasterSemaphore", O_CREAT, 0644, val0);
 
     //The vessel Semaphore shows when the vessel should read from the shared memory
-    sem_t vesselSemaphore = createSem("/vesselSemaphore");
+    sem_t *vesselSemaphore = sem_open("/vesselSemaphore", O_CREAT, 0644, val0);
 
     //Shows if the harbor is currently occupied by another vessel.
-    sem_t occupiedHarborSemaphore = createSem("/occupiedHarborSemaphore");
+    sem_t *occupiedHarborSemaphore = sem_open("/occupiedHarborSemaphore", O_CREAT, 0644, val1);
+
+    int occupiedHarborSemaphoreRetVal;
+
+    sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
+	printf("semvalue portMASTER %d\n", occupiedHarborSemaphoreRetVal);
 
     //ftok to generate unique key 
     key_t key = ftok("shmfile",65); 

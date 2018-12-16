@@ -71,7 +71,9 @@ void printPublicLedger(publicLedgerRecord rec){
 }
 
 void writeToSharedMem(publicLedgerRecord rec, char *sharedMem){
-    sprintf(sharedMem, "%s - %fs - %fa - %c - %s - %d - %d", rec.shipName, rec.stayTime, rec.arrivalTime, rec.parkingSpace, rec.status, rec.overrideParking, rec.cost);
+    char buf[1000];
+    sprintf(buf, "%s - %fs - %fa - %c - %s - %d - %d", rec.shipName, rec.stayTime, rec.arrivalTime, rec.parkingSpace, rec.status, rec.overrideParking, rec.cost);
+    memcpy(sharedMem, buf, sizeof(publicLedgerRecord));
 }
 
 char *randstring(size_t length) {
@@ -109,11 +111,11 @@ int randOverrideParking(){
  *************************************************************************/
 
 
-sem_t createSem(char *name){
+sem_t createSem(char *name, int initialValue){
     sem_t *sp; 
 
     /*  Initialize  the  semaphore. */
-    sp = sem_open(name, O_CREAT, 0644, 0);
+    sp = sem_open(name, O_CREAT, 0644, initialValue);
 
     if (sp  == SEM_FAILED) {
         perror("Couldn ’t initialize.");

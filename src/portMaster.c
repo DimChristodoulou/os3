@@ -6,11 +6,20 @@ int main(int argc, char const *argv[])
     FILE *configFile;
     int shmid, count;
 
-    //The portMaster Semaphore shows when the port master should read from the shared memory
-    sem_t portMasterSemaphore = createSem("/portMasterSemaphore");
-    printf("test\n");
-    sem_wait(&portMasterSemaphore);
-    printf("test\n");
+    //The vessel Semaphore shows when the vessel should read from the shared memory
+	sem_t *vesselSemaphore = sem_open("/vesselSemaphore", 0);
+	//The portMaster Semaphore shows when the port master should read from the shared memory
+	sem_t *portMasterSemaphore = sem_open("/portMasterSemaphore", 0);
+    //Shows if the harbor is currently occupied by another vessel.
+	sem_t *occupiedHarborSemaphore = sem_open("/occupiedHarborSemaphore", 1);
+
+    int occupiedHarborSemaphoreRetVal, portMasterSemaphoreRetVal, vesselSemaphoreRetVal;
+
+    sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
+	printf("semvalue portMASTER %d\n", occupiedHarborSemaphoreRetVal);
+    // printf("test\n");
+    // sem_wait(&portMasterSemaphore);
+    // printf("test\n");
     //printf("%s %s %s %s\n", argv[1], argv[2], argv[3], argv[4]);
 
     if(argc == 5){
@@ -29,7 +38,7 @@ int main(int argc, char const *argv[])
     size_t len = 0;
     ssize_t read;
     char configs[9][10];
-    int i=0,j=0;
+    int i=0;
 
     if (configFile == NULL)
         exit(EXIT_FAILURE);
@@ -46,20 +55,43 @@ int main(int argc, char const *argv[])
         }
     }
     
-    // for(i = 0; i < 9; i++){
-    //     if(i%3==0)
-    //         printf(" TYPE OF VESSEL %s\n",configs[i]);
-    //     else if (i%3==1)
-    //         printf(" VESSEL CAPACITY %s\n",configs[i]);
-    //     else if (i%3==2)
-    //         printf(" PAY PER 30MIN %s\n",configs[i]);
-    // }
+    char typesOfVessels[i];
+    int vesselCapacity[i], payPer30[i];
+    int j=0,k=0,m=0;
+    for(i = 0; i < 9; i++){
+        if(i%3==0){            
+            typesOfVessels[j++] = configs[i][0];
+        }
+        else if (i%3==1){
+            vesselCapacity[k++] = atoi(configs[i]);
+        }
+        else if (i%3==2)
+            payPer30[m++] = atoi(configs[i]);
+    }
     //END READ FROM CONFIG FILE
 
-    printf("%d\n", shmid);
+    publicLedger *head = NULL;
+    char buf[1000];
     char *shmemStr = (char*) shmat(shmid,(void*)0,0);
-    printf("attached\n");
-    //publicLedger *head = NULL;
+    
+    
+    while(1){
+        //Wait until a ship shows up
+        printf("test\n");
+        sem_wait(vesselSemaphore);
+        printf("test\n");
+        if( occupiedHarborSemaphoreRetVal > 0 ){
+            //Signal all ships that the harbor is occupied
+            printf("test\n");
+            sem_wait(occupiedHarborSemaphore);
+            printf("test\n");
+            memcpy(buf, shmemStr, sizeof(publicLedgerRecord));
+            printf("BUF IS %s\n",buf);
+        }
+        sem_post(portMasterSemaphore);
+
+    }
+
     //memcpy(&head, shmemStr, sizeof(int));
     //printf("copied %d\n", &head);
     //publicLedgerRecord r1 = pop(&head);
