@@ -26,7 +26,7 @@ int main(int argc, char const *argv[])
 	int isLeaving = 0, isEntered = 0;
 
 	sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
-	printf("semvalue %d\n", globalSemaphoreRetVal);
+	//printf("semvalue %d\n", globalSemaphoreRetVal);
 
     //Argument handling
     if(argc == 11){
@@ -48,7 +48,7 @@ int main(int argc, char const *argv[])
 		
 	}
 
-    printf("NEW VESSEL %c %d %d %d %d\n", type, postype, parkperiod, mantime, shmid);
+    //printf("NEW VESSEL %c %d %d %d %d\n", type, postype, parkperiod, mantime, shmid);
 	
 	while(!isEntered){
 		sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);

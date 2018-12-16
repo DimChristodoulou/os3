@@ -99,14 +99,18 @@ int main(int argc, char const *argv[])
         //Wait until a ship shows up
         sem_wait(vesselSemaphore);
         sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-        printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
+        //printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
         sem_getvalue(shipLeavingSemaphore , &shipLeavingSemaphoreRetVal);
         printf("SEMAPHORE LEAVING %d\n", shipLeavingSemaphoreRetVal);
         if( occupiedHarborSemaphoreRetVal > 0 && shipLeavingSemaphoreRetVal > 0){
             count = 0;
+
             //Signal all ships that the harbor is occupied
             sem_wait(occupiedHarborSemaphore);
-
+            
+            sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
+            printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
+            
             //PART THAT INSERTS THE SHIP IN THE PUBLIC LEDGER
             //memcpy(buf, shmemStr, sizeof(publicLedgerRecord));
             readFromSharedMem(buf, shmemStr);
