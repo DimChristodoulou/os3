@@ -98,10 +98,16 @@ int main(int argc, char const *argv[])
 
         //Wait until a ship shows up
         sem_wait(vesselSemaphore);
+        
+        sem_getvalue(vesselSemaphore , &vesselSemaphoreRetVal);
+        //printf("SEMAPHORE VESSEL %d\n", vesselSemaphoreRetVal);
+
         sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
         //printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
+        
         sem_getvalue(shipLeavingSemaphore , &shipLeavingSemaphoreRetVal);
-        printf("SEMAPHORE LEAVING %d\n", shipLeavingSemaphoreRetVal);
+        //printf("SEMAPHORE LEAVING %d\n", shipLeavingSemaphoreRetVal);
+        
         if( occupiedHarborSemaphoreRetVal > 0 && shipLeavingSemaphoreRetVal > 0){
             count = 0;
 
@@ -109,15 +115,15 @@ int main(int argc, char const *argv[])
             sem_wait(occupiedHarborSemaphore);
             
             sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-            printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
+            //printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
             
             //PART THAT INSERTS THE SHIP IN THE PUBLIC LEDGER
-            //memcpy(buf, shmemStr, sizeof(publicLedgerRecord));
+
             readFromSharedMem(buf, shmemStr);
             printf("PORTMASTER BUF IS %s\n",buf);
             token[count++] = strtok(buf, "-");
             do{
-                printf("token: \"%s\"\n", token[count-1]);
+                //printf("token: \"%s\"\n", token[count-1]);
             }
             while (token[count++] = strtok(NULL, "-"));
 
@@ -134,9 +140,11 @@ int main(int argc, char const *argv[])
             //printPublicLedger(recordToBeInserted);
         }
         sem_post(portMasterSemaphore);
+        sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
+
         sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
     }
-
+    
     //memcpy(&head, shmemStr, sizeof(int));
     //printf("copied %d\n", &head);
     //publicLedgerRecord r1 = pop(&head);
