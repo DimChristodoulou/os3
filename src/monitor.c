@@ -18,7 +18,9 @@ int main(int argc, char const *argv[])
     //Semaphore that coordinates child processes with parent process.
 	sem_t *globalSemaphore = sem_open("/myGlobalSemaphore", 1);
 
-    int occupiedHarborSemaphoreRetVal, portMasterSemaphoreRetVal, vesselSemaphoreRetVal, globalSemaphoreRetVal;
+    sem_t *shipLeavingSemaphore = sem_open("/shipLeavingSemaphore", 1);
+
+    int occupiedHarborSemaphoreRetVal, portMasterSemaphoreRetVal, vesselSemaphoreRetVal, globalSemaphoreRetVal, shipLeavingSemaphoreRetVal;
     int shmid, count;
     char buf[1000];
 
@@ -49,6 +51,17 @@ int main(int argc, char const *argv[])
         memcpy(buf, shmemStr, sizeof(publicLedgerRecord));
         printf("MONITOR BUF IS %s\n",buf);
         sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
+
+        sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
+        printf("semvalue occupiedHarbor %d\n", occupiedHarborSemaphoreRetVal);
+        sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
+        printf("semvalue global  %d\n", globalSemaphoreRetVal);
+        sem_getvalue(vesselSemaphore , &vesselSemaphoreRetVal);
+        printf("semvalue vessel  %d\n", vesselSemaphoreRetVal);
+        sem_getvalue(portMasterSemaphore , &portMasterSemaphoreRetVal);
+        printf("semvalue portMaster  %d\n", portMasterSemaphoreRetVal);
+        sem_getvalue(shipLeavingSemaphore , &shipLeavingSemaphoreRetVal);
+        printf("semvalue shipLeaving  %d\n", shipLeavingSemaphoreRetVal);
     }
 
     return 0;

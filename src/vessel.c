@@ -60,16 +60,27 @@ int main(int argc, char const *argv[])
 	
 	while(!isEntered){
 		sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-		//printf("semvalue %d\n", occupiedHarborSemaphoreRetVal);
+		
+		// if( occupiedHarborSemaphoreRetVal == 0 ){
+		// 	//Wait until harbor is not occupied
+		// 	sem_wait(occupiedHarborSemaphore);
 
-		if( occupiedHarborSemaphoreRetVal == 0 ){
-			//printf("not yet\n");
-			//Wait until harbor is not occupied
-			sem_wait(occupiedHarborSemaphore);
+		// 	//sem_post(occupiedHarborSemaphore);
+		// }
+
+		while(occupiedHarborSemaphoreRetVal==0){
+			sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
 		}
-		else{
+		if( occupiedHarborSemaphoreRetVal > 0 ){
 			//Signal the port master that a new vessel is about to enter the harbor
+			sem_getvalue(vesselSemaphore , &vesselSemaphoreRetVal);
+        	//printf("SEMAPHORE VESSEL BEFORE %d\n", vesselSemaphoreRetVal);
+			
 			sem_post(vesselSemaphore);
+			
+			sem_getvalue(vesselSemaphore , &vesselSemaphoreRetVal);
+        	//printf("SEMAPHORE VESSEL AFTER %d\n", vesselSemaphoreRetVal);
+			
 			printf("SHIP ENTERED HARBOR\n");
 
 			time ( &rawtime ); 
@@ -81,7 +92,7 @@ int main(int argc, char const *argv[])
 			isEntered = 1;
 
 			//Signal the port master that the vessel is in the harbor and no new vessels should enter
-			//sem_wait(vesselSemaphore);
+			//sem_wait(occupiedHarborSemaphore);
 
 			//Start "maneuvering" for mantime seconds
 			sleep(mantime);
@@ -102,11 +113,10 @@ int main(int argc, char const *argv[])
 
 			while(!isLeaving){
 				sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-				if(occupiedHarborSemaphoreRetVal==0){
-					//Wait until harbor is not occupied
-					sem_wait(occupiedHarborSemaphore);
+				while(occupiedHarborSemaphoreRetVal==0){
+					sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
 				}
-				else{
+				if(occupiedHarborSemaphoreRetVal>0){
 					sem_post(vesselSemaphore);
 					sem_wait(shipLeavingSemaphore);
 					printf("SHIP LEAVING\n");
@@ -115,7 +125,7 @@ int main(int argc, char const *argv[])
 					printf("SHIP LEFT\n");
 					sem_post(shipLeavingSemaphore);
 					//After ship has left, increase harbor semaphore to show that it's not occupied anymore
-					sem_post(occupiedHarborSemaphore);
+					//sem_post(occupiedHarborSemaphore);
 				}
 			}
 

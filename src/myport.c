@@ -125,7 +125,7 @@ int main(int argc, char *argv[]){
             printf("i to insert\n");
             scanf("%c",&quit);
             while( quit == 'i' ){                
-                publicLedgerRecord randVessel = createPublicLedger(randstring(10), rand()%5+1, rand()%5+1, randomShipSize(), "waiting", randOverrideParking(), rand()%3+1);
+                publicLedgerRecord randVessel = createPublicLedger(randstring(10), rand()%10+1, rand()%10+1, randomShipSize(), "waiting", randOverrideParking(), rand()%3+1);
                 
                 sprintf(vesselArgumentArray[2],"%c",randVessel.shipSize);
                 sprintf(vesselArgumentArray[4],"%d",randVessel.overrideParking);
