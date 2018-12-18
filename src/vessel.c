@@ -124,8 +124,6 @@ int main(int argc, char const *argv[])
 					sleep(mantime);
 					printf("SHIP LEFT\n");
 					sem_post(shipLeavingSemaphore);
-					//After ship has left, increase harbor semaphore to show that it's not occupied anymore
-					//sem_post(occupiedHarborSemaphore);
 				}
 			}
 

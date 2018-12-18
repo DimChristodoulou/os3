@@ -1,14 +1,5 @@
 #include "../inc/global.h"
 
-#define SEMKEYPATH "/tmp"  /* Path used on ftok for semget key  */
-#define SEMKEYID 1              /* Id used on ftok for semget key    */
-#define SHMKEYPATH "/tmp"  /* Path used on ftok for shmget key  */
-#define SHMKEYID 1              /* Id used on ftok for shmget key    */
-
-#define NUMSEMS 2               /* Num of sems in created sem set    */
-#define SIZEOFSHMSEG 50         /* Size of the shared mem segment    */
-
-#define NUMMSG 2
 
 void errCatch(char* errmsg){
 	printf("Error: %s\n", errmsg);
@@ -66,9 +57,62 @@ publicLedgerRecord pop(publicLedger** root) {
     return popped; 
 } 
 
-void printPublicLedger(publicLedgerRecord rec){
-    printf("Current public ledger record is %s - %f - %f - %c - %s - %d - %d\n",rec.shipName, rec.stayTime, rec.arrivalTime, rec.shipSize, rec.status, rec.overrideParking, rec.cost);
+void changeStatus(publicLedger *head, char *name, char *status){
+    publicLedger *temp;
+    temp = head;
+    while(temp!=NULL){
+        if( strcmp(temp->data.shipName, name) == 0){
+            strcpy(temp->data.status, status);
+        }
+        temp = temp->next;
+    }
 }
+
+void printPublicLedgerRecord(publicLedgerRecord rec){
+    printf("Spawned new vessel with name %s, stay time %f, arrival time %f, size %c, status %s and override parking %d\n",rec.shipName, rec.stayTime, rec.arrivalTime, rec.shipSize, rec.status, rec.overrideParking);
+}
+
+float setPayment(publicLedgerRecord rec, float amount){
+    rec.payment = amount;
+}
+
+void printPublicLedger( publicLedger *head ){
+    publicLedger *temp;
+    temp = head;
+    while(temp != NULL){
+        printPublicLedgerRecord(temp->data);
+        temp = temp->next;
+    }
+}
+
+int searchLedger(publicLedger *head, publicLedgerRecord recordToSearch){
+    publicLedger *temp;
+    temp = head;
+    while(temp!=NULL){
+        if( strcmp(temp->data.shipName, recordToSearch.shipName) == 0){
+            return 0;
+        }
+        temp = temp->next;
+    }
+    return 1;
+}
+
+char getRecordSize(publicLedger *head, char *recordNameToFind){
+    publicLedger *temp;
+    temp = head;
+    while(temp!=NULL){
+        if( strcmp(temp->data.shipName, recordNameToFind) == 0){
+            return temp->data.shipSize;
+        }
+    }
+    return 0;
+}
+
+
+/*************************************************************************
+ *                      SHARED MEMORY AND SEMAPHORES                     *
+ *************************************************************************/
+
 
 void writeToSharedMem(publicLedgerRecord rec, char *sharedMem){
     char buf[1000];
@@ -82,7 +126,7 @@ void readFromSharedMem(char *dest, char *sharedMem){
 
 char *randstring(size_t length) {
 
-    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";        
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";        
     char *randomString = NULL;
 
     if (length) {
@@ -109,11 +153,6 @@ char randomShipSize(){
 int randOverrideParking(){
     return rand()%2;
 }
-
-/*************************************************************************
- *                      SHARED MEMORY AND SEMAPHORES                     *
- *************************************************************************/
-
 
 sem_t createSem(char *name, int initialValue){
     sem_t *sp; 

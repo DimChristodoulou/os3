@@ -12,6 +12,8 @@
     #include <time.h>
     #include <sys/stat.h>
     #include <fcntl.h>
+    #include <sys/types.h>
+    #include <sys/wait.h>
 
     extern FILE *fptrWrite;
 
@@ -23,10 +25,12 @@
         int overrideParking;
         int cost;
         float mantime;
+        float payment;
     } publicLedgerRecord;
 
     typedef struct list{
         publicLedgerRecord data;
+        float totalPay;
         struct list *next;
     } publicLedger;
 
@@ -41,8 +45,13 @@
     char *randstring(size_t length);
     char randomShipSize();
     int randOverrideParking();
-    void printPublicLedger(publicLedgerRecord rec);
+    void printPublicLedgerRecord(publicLedgerRecord rec);
     void writeToSharedMem(publicLedgerRecord rec, char *sharedMem);
     void readFromSharedMem(char *dest, char *sharedMem);
+    float setPayment(publicLedgerRecord record, float amount);
+    void printPublicLedger( publicLedger *head );
+    int searchLedger(publicLedger *head, publicLedgerRecord recordToSearch);
+    char getRecordSize(publicLedger *head, char *recordNameToFind);
+    void changeStatus(publicLedger *head, char *name, char *status);
 
 #endif

@@ -5,6 +5,14 @@ FILE *fptrWrite;
 
 int main(int argc, char const *argv[])
 {
+
+    //ftok to generate unique key 
+    key_t key = ftok("shmfile1",65); 
+    //shmget returns an identifier in shmid
+    int shmid1 = shmget(key,1024,0666|IPC_CREAT);
+    //shmat to attach to shared memory 
+    char *shmemStr1 = (char*) shmat(shmid1,(void*)0,0);
+
     FILE *configFile;
     int shmid, count;
 
@@ -15,17 +23,13 @@ int main(int argc, char const *argv[])
     fptrWrite = fopen("logfile", "a+");
 
     //The vessel Semaphore shows when the vessel should read from the shared memory
-	sem_t *vesselSemaphore = sem_open("/vesselSemaphore", 0);
-	
+	sem_t *vesselSemaphore = sem_open("/vesselSemaphore", 0);	
     //The portMaster Semaphore shows when the port master should read from the shared memory
-	sem_t *portMasterSemaphore = sem_open("/portMasterSemaphore", 0);
-    
+	sem_t *portMasterSemaphore = sem_open("/portMasterSemaphore", 0);    
     //Shows if the harbor is currently occupied by another vessel.
-	sem_t *occupiedHarborSemaphore = sem_open("/occupiedHarborSemaphore", 1);
-    
+	sem_t *occupiedHarborSemaphore = sem_open("/occupiedHarborSemaphore", 1);    
     //Semaphore that coordinates child processes with parent process.
 	sem_t *globalSemaphore = sem_open("/myGlobalSemaphore", 1);
-
     //Semaphore that coordinates child processes with parent process.
 	sem_t *shipLeavingSemaphore = sem_open("/shipLeavingSemaphore", 1);
 
@@ -33,19 +37,12 @@ int main(int argc, char const *argv[])
 
     sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
 
-    // printf("test\n");
-    // sem_wait(&portMasterSemaphore);
-    // printf("test\n");
-    //printf("%s %s %s %s\n", argv[1], argv[2], argv[3], argv[4]);
-
     if(argc == 5){
-
 		count = strArraySearch(argv, argc, "-s");
-		shmid = atoi(argv[++count]);
-		
+		shmid = atoi(argv[++count]);	
+
         count = strArraySearch(argv, argc, "-c");
-		configFile = fopen(argv[++count], "r");
-		
+		configFile = fopen(argv[++count], "r");		
 	}    
 
     //START READ FROM CONFIG FILE
@@ -60,7 +57,6 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
 
     while ((read = getline(&line, &len, configFile)) != -1) {
-        //printf("Retrieved line of length %zu:\n", read);
         word = strtok (line," \n");
         strcpy(configs[i],word);
         while (word != NULL){  
@@ -74,6 +70,9 @@ int main(int argc, char const *argv[])
     char typesOfVessels[totalCountOfConfigFile];
     int vesselCapacity[totalCountOfConfigFile], payPer30[totalCountOfConfigFile];
     int j=0,k=0,m=0;
+
+    float payment, totalPayment = 0;
+
     for(i = 0; i < 9; i++){
         if(i%3==0){            
             typesOfVessels[j++] = configs[i][0];
@@ -102,67 +101,130 @@ int main(int argc, char const *argv[])
 
     count = 0;
 
-    while(globalSemaphoreRetVal == 0){
+    char temp[1000];
+    char tempSize;
+
+    while(globalSemaphoreRetVal == 0){        
 
         //Wait until a ship shows up
         sem_wait(vesselSemaphore);
+        sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
+        if(globalSemaphoreRetVal != 0){
+            break;
+        }
         
         sem_getvalue(vesselSemaphore , &vesselSemaphoreRetVal);
-        //printf("SEMAPHORE VESSEL %d\n", vesselSemaphoreRetVal);
-
         sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-        //printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
-        
         sem_getvalue(shipLeavingSemaphore , &shipLeavingSemaphoreRetVal);
-        //printf("SEMAPHORE LEAVING %d\n", shipLeavingSemaphoreRetVal);
+        
+        //IF A SHIP IS LEAVING
+        if(shipLeavingSemaphoreRetVal == 0){
+            fprintf(fptrWrite," %s : THE VESSEL %s LEFT THE PORT [PORT MASTER]\n", timeInfoStr, buf);
+            //ADD 1 PARKING SPOT ACCORDING TO THE SHIP'S SIZE
+            tempSize = getRecordSize(head, buf);
+            changeStatus(head,buf,"left");
+            fprintf(fptrWrite," %s : CHANGED STATUS OF VESSEL %s FROM PARKED TO LEFT [PORT MASTER]\n", timeInfoStr, buf);
+            for(i=0;i<totalCountOfConfigFile;i++){
+                if(typesOfVessels[i] == tempSize){
+                    vesselCapacity[i]++;                                        
+                }
+            }
+            //ALERT MONITOR PROCESS THAT A CHANGE WAS MADE
+            sprintf(temp,"%d %d %d %f", vesselCapacity[0],vesselCapacity[1],vesselCapacity[2], totalPayment);
+            memcpy(shmemStr1, temp, sizeof(temp));
+            sem_post(portMasterSemaphore);
+        }
         
         if( occupiedHarborSemaphoreRetVal > 0 && shipLeavingSemaphoreRetVal > 0){
             count = 0;
-
             //Signal all ships that the harbor is occupied
             sem_wait(occupiedHarborSemaphore);
             
             sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
-            //printf("SEMAPHORE %d\n", occupiedHarborSemaphoreRetVal);
             
             //PART THAT INSERTS THE SHIP IN THE PUBLIC LEDGER
-
             readFromSharedMem(buf, shmemStr);
-            printf("PORTMASTER BUF IS %s\n",buf);
 
-            time ( &rawtime ); 
+            //GET TIME FOR LOGFILE
+            time (&rawtime);
 			timeinfo = localtime ( &rawtime );
 			timeInfoStr = asctime(timeinfo);
 			timeInfoStr[strlen(timeInfoStr) - 1] = 0;
-			fprintf(fptrWrite," %s : THE PORT MASTER INSERTED THE VESSEL %s IN THE PUBLIC LEDGER [PORT MASTER]\n", timeInfoStr);
+			fprintf(fptrWrite," %s : THE PORT MASTER INSERTED THE VESSEL %s IN THE PUBLIC LEDGER [PORT MASTER]\n", timeInfoStr, buf);
             
             token[count++] = strtok(buf, "-");
-            do{
-                //printf("token: \"%s\"\n", token[count-1]);
-            }
+            do{}
             while (token[count++] = strtok(NULL, "-"));
 
-            //REMOVE 1 PARKING SPOT ACCORDING TO THE SHIP'S SIZE
+            //REMOVE 1 PARKING SPOT ACCORDING TO THE SHIP'S SIZE AND PAY THE PORT MASTER
             for(i=0;i<totalCountOfConfigFile;i++){
-                if(typesOfVessels[i] == token[3][0]){
-                    vesselCapacity[i]--;
+                //IF THERE ARE ENOUGH PARKING SLOTS OF SAME SIZE
+                if(typesOfVessels[i] == token[3][0] && vesselCapacity[i] > 0){
+                    vesselCapacity[i]--;                    
+                    payment = ( (float)payPer30[i]/1800)*atof(token[1]);
+                    totalPayment += payment;
+                    changeStatus(head,buf,"parked");
+                    fprintf(fptrWrite," %s : CHANGED STATUS OF VESSEL %s FROM WAITING TO PARKED [PORT MASTER]\n", timeInfoStr, buf);
                 }
-            }
+                //IF THERE ARENT ENOUGH SLOTS OF SAME SIZE
+                else if( atoi(token[5]) == 1 ){
+                    if(typesOfVessels[0] == token[3][0] && vesselCapacity[0] <= 0 && vesselCapacity[1] > 0){
+                        vesselCapacity[1]--;                    
+                        payment = ( (float)payPer30[1]/1800)*atof(token[1]);
+                        totalPayment += payment;
+                        changeStatus(head,buf,"parked");
+                        fprintf(fptrWrite," %s : SMALL VESSEL %s PARKED IN MEDIUM SLOT [PORT MASTER]\n", timeInfoStr, buf);
+                        fprintf(fptrWrite," %s : CHANGED STATUS OF VESSEL %s FROM WAITING TO PARKED [PORT MASTER]\n", timeInfoStr, buf);
+                    }
+                    else if(typesOfVessels[0] == token[3][0] && vesselCapacity[1] <= 0 && vesselCapacity[2] > 0){
+                        vesselCapacity[2]--;                    
+                        payment = ( (float)payPer30[2]/1800)*atof(token[1]);
+                        totalPayment += payment;
+                        changeStatus(head,buf,"parked");
+                        fprintf(fptrWrite," %s : SMALL VESSEL %s PARKED IN LARGE SLOT [PORT MASTER]\n", timeInfoStr, buf);
+                        fprintf(fptrWrite," %s : CHANGED STATUS OF VESSEL %s FROM WAITING TO PARKED [PORT MASTER]\n", timeInfoStr, buf);
+                    }
+                    else if(typesOfVessels[1] == token[3][0] && vesselCapacity[1] <= 0 && vesselCapacity[2] > 0){
+                        vesselCapacity[2]--;                    
+                        payment = ( (float)payPer30[2]/1800)*atof(token[1]);
+                        totalPayment += payment;
+                        changeStatus(head,buf,"parked");
+                        fprintf(fptrWrite," %s : MEDIUM VESSEL %s PARKED IN LARGE SLOT [PORT MASTER]\n", timeInfoStr, buf);
+                        fprintf(fptrWrite," %s : CHANGED STATUS OF VESSEL %s FROM WAITING TO PARKED [PORT MASTER]\n", timeInfoStr, buf);
+                    }
+                    else if(vesselCapacity[1] <= 0 && vesselCapacity[2] <= 0 && vesselCapacity[3]<=0){
+                        fprintf(fptrWrite," %s : NO SPACE FOR VESSEL %s... WAITING [PORT MASTER]\n", timeInfoStr, buf);
+                    }
+                }
+            }            
 
+            //ALERT MONITOR PROCESS THAT A CHANGE WAS MADE
+            sprintf(temp,"%d %d %d %f", vesselCapacity[0],vesselCapacity[1],vesselCapacity[2], totalPayment);
+            memcpy(shmemStr1, temp, sizeof(temp));
+            sem_post(portMasterSemaphore);
+
+            //INSERT SHIP TO LEDGER
             recordToBeInserted = createPublicLedger(token[0],atof(token[1]),atof(token[2]),token[3][0],token[4],atoi(token[5]),atof(token[6]));
-            push(&head,recordToBeInserted);
-            //shmemStr = "";
-            //printPublicLedger(recordToBeInserted);
-        }
-        sem_post(portMasterSemaphore);
-        sem_getvalue(occupiedHarborSemaphore , &occupiedHarborSemaphoreRetVal);
+            setPayment(recordToBeInserted, payment);
 
+            fprintf(fptrWrite," %s : THE VESSEL %s PAYED %f [PORT MASTER]\n", timeInfoStr, buf, payment);
+
+            push(&head,recordToBeInserted);
+            
+        }        
+        //UPDATE GLOBAL SEMAPHORE TO CHECK THAT PARENT HASN'T EXITED YET
         sem_getvalue(globalSemaphore , &globalSemaphoreRetVal);
     }
-    
-    //memcpy(&head, shmemStr, sizeof(int));
-    //printf("copied %d\n", &head);
-    //publicLedgerRecord r1 = pop(&head);
-    //printf("CHILD READ %s %f %f %c %c %s\n",r1.shipName, r1.arrivalTime, r1.stayTime, r1.parkingSpace, r1.shipSize, r1.status);
+    //FINAL PRINTS
+    printPublicLedger(head);
+    printf("TOTAL PAYMENT: %f", totalPayment);
+
+
+    //DETACHING SHARED MEMORY
+    shmdt(shmemStr);
+    shmdt(shmemStr1);
+    //Destroy the shared memory
+    shmctl(shmid1,IPC_RMID,NULL);
+
     return 0;
 }
