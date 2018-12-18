@@ -13,6 +13,8 @@
     #include <sys/stat.h>
     #include <fcntl.h>
 
+    extern FILE *fptrWrite;
+
     typedef struct publicLedgerRecords{
         char shipName[50];
         float stayTime, arrivalTime;

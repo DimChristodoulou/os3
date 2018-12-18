@@ -3,6 +3,10 @@
         "global.h": "c",
         "global.h\u0000global.h": "c",
         "global.h\u0000lobal.h": "c",
-        "global.h\u0000obal.h": "c"
+        "global.h\u0000obal.h": "c",
+        "portmaster.h\u0000master.h": "c",
+        "portmaster.h\u0000aster.h": "c",
+        "portmaster.h\u0000rtmaster.h": "c",
+        "portmaster.h\u0000ster.h": "c"
     }
 }

@@ -1,11 +1,19 @@
 #include "../inc/vessel.h"
 #include "../inc/global.h"
 
+FILE *fptrWrite;
+
 int main(int argc, char const *argv[])
 {
     
     char type;
     int postype, parkperiod, mantime, shmid, count;
+
+	fptrWrite = fopen("logfile", "a+");
+	char *timeInfoStr;
+
+	time_t rawtime;
+  	struct tm * timeinfo; 	
 
 	//The vessel Semaphore shows when the vessel should read from the shared memory
 	sem_t *vesselSemaphore = sem_open("/vesselSemaphore", 0);
@@ -63,6 +71,13 @@ int main(int argc, char const *argv[])
 			//Signal the port master that a new vessel is about to enter the harbor
 			sem_post(vesselSemaphore);
 			printf("SHIP ENTERED HARBOR\n");
+
+			time ( &rawtime ); 
+			timeinfo = localtime ( &rawtime );
+			timeInfoStr = asctime(timeinfo);
+			timeInfoStr[strlen(timeInfoStr) - 1] = 0;
+			fprintf(fptrWrite," %s : A SHIP ENTERED THE HARBOR [VESSEL]\n", timeInfoStr);
+
 			isEntered = 1;
 
 			//Signal the port master that the vessel is in the harbor and no new vessels should enter
@@ -71,6 +86,13 @@ int main(int argc, char const *argv[])
 			//Start "maneuvering" for mantime seconds
 			sleep(mantime);
 			printf("SHIP PARKED\n");
+
+			time ( &rawtime ); 
+			timeinfo = localtime ( &rawtime );
+			timeInfoStr = asctime(timeinfo);
+			timeInfoStr[strlen(timeInfoStr) - 1] = 0;
+			fprintf(fptrWrite," %s : A SHIP IS NOW PARKED [VESSEL]\n", timeInfoStr);
+
 			//After ship is parked, increase harbor semaphore to show that it's not occupied anymore
 			sem_post(occupiedHarborSemaphore);
 			

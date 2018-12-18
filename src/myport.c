@@ -1,11 +1,15 @@
 #include "../inc/global.h"
 
+FILE *fptrWrite;
+
 int main(int argc, char *argv[]){
 
     //Time seed used to generate random vessels
     srand(time(0));
     unsigned int val1 = 1, val0 = 0;
     
+    fptrWrite = fopen("logfile", "a+");
+
     //Both Semaphores are initialized to zero
     //The portMaster Semaphore shows when the port master should read from the shared memory
     sem_t *portMasterSemaphore = sem_open("/portMasterSemaphore", O_CREAT, 0644, val0);

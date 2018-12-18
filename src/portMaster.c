@@ -1,10 +1,18 @@
 #include "../inc/portMaster.h"
 #include "../inc/global.h"
 
+FILE *fptrWrite;
+
 int main(int argc, char const *argv[])
 {
     FILE *configFile;
     int shmid, count;
+
+    time_t rawtime;
+  	struct tm * timeinfo;
+    char *timeInfoStr;
+
+    fptrWrite = fopen("logfile", "a+");
 
     //The vessel Semaphore shows when the vessel should read from the shared memory
 	sem_t *vesselSemaphore = sem_open("/vesselSemaphore", 0);
@@ -115,6 +123,13 @@ int main(int argc, char const *argv[])
             //memcpy(buf, shmemStr, sizeof(publicLedgerRecord));
             readFromSharedMem(buf, shmemStr);
             printf("PORTMASTER BUF IS %s\n",buf);
+
+            time ( &rawtime ); 
+			timeinfo = localtime ( &rawtime );
+			timeInfoStr = asctime(timeinfo);
+			timeInfoStr[strlen(timeInfoStr) - 1] = 0;
+			fprintf(fptrWrite," %s : THE PORT MASTER INSERTED THE VESSEL %s IN THE PUBLIC LEDGER [PORT MASTER]\n", timeInfoStr);
+            
             token[count++] = strtok(buf, "-");
             do{
                 printf("token: \"%s\"\n", token[count-1]);

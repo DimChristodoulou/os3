@@ -4,6 +4,8 @@
 int main(int argc, char const *argv[])
 {
 
+    
+
     //The vessel Semaphore shows when the vessel should read from the shared memory
 	sem_t *vesselSemaphore = sem_open("/vesselSemaphore", 0);
 
